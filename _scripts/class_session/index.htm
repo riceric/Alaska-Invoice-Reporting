@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+  <meta http-equiv="content-type" content="text/html; charset=windows-1250">
+  <meta name="generator" content="PSPad editor, www.pspad.com">
+  <title>PHP class_session from Troy Wolf</title>
+  <style>
+  body {
+    font-family:"Trebuchet MS","Arial";
+    font-size:11pt;
+  }
+  table.def {
+  }
+  table.def th {
+    font-family:"Trebuchet MS","Arial";
+    font-size:11pt;
+    padding:5px;
+    font-weight:bold;
+    background-color:#E4F6C9;
+  }
+  table.def td {
+    font-family:"Trebuchet MS","Arial";
+    font-size:11pt;
+    padding:5px;
+    border:1px solid #000000;
+  }
+  h1 {
+    margin:10px 0px 5px 0px;
+  }
+  h2 {
+    margin:10px 0px 0px 0px;
+  }
+  h3 {
+    margin:10px 0px 0px 0px;
+  }
+  .php {
+    border:2px #cccccc solid;
+    background-color:#f3f3f3;
+    padding:5px;
+  }
+  </style>
+  </head>
+  <body>
+
+  <h1>class_session.php</h1>
+  Author: Troy Wolf (<a href="mailto:troy@troywolf.com">troy@troywolf.com</a>)
+  <br />
+  Modified Date: 2005-06-18 14:20
+  <br />
+  Download: <a href="class_session.zip">class_session.zip</a>
+  <br />
+  View class source: <a href="class_session.phps">class_session.php source</a>
+  <br /><br />
+  class_session is a <b>session management</b> and <b>password protection</b> class.
+  It can be used to perform 2 major functions:
+  <ol>
+    <li> Create and maintain session state between page hits.
+         The class does this using simple session cache files
+         into which the session is stored as a serialized array.
+         This is similar to how PHP's built-in sessions store
+         session data.  One big advantage of this class is that
+         you have full control over the session timeout.
+         <br /><br />
+    </li>
+    <li> Password protect PHP pages by requiring authentication.
+         Simply pass in "true" when creating a new session
+         object to use this functionality. You'll also need to
+         create your own login.php script. A sample login.php
+         is packaged with this class.
+    </li>
+  </ol>
+  This is accomplished by storing a single session id cookie on the user's
+  computer. No other data is stored on the user's computer, and the cookie
+  expires when the user closes their browser. Because PHP can't write cookies
+  after browser output is started, make sure you create the session and save
+  session data BEFORE you start any browser output.
+  <br /><br />
+  Before you can use the class, you need to modify the 'dir' property in the 
+  class file to point to a directory where you want to store session cache
+  files. You'll find this property in the session() function (the class
+  constructor).
+  <div class="php"><code>
+    <font color="#FF8000">/*
+    <br />Define the directory to save session files in. This defaults to the current
+    <br />dir, but this is probably not what you want. For one thing, it is INSECURE!
+    <br />It also will prevent your sessions from working between scripts in different
+    <br />dirs. It is highly recommended that you set this to a non web-accessible
+    <br />dir. End this value with a "/".
+    <br />*/
+    <br /></font><font color="#0000BB">$this</font><font color="#007700">-&gt;</font><font color="#0000BB">dir </font><font color="#007700">= </font><font color="#0000BB">realpath</font><font color="#007700">(</font><font color="#DD0000">"./"</font><font color="#007700">).</font><font color="#DD0000">"/"</font><font color="#007700">;
+    </font>
+  </code></div>
+  <br />
+  To use the class in your scripts, you first need to include the class file.
+  <div class="php"><code>
+   <font color="#000000">
+      <font color="#FF8000">/*<br />Include the class. Modify path according to where you put the class file.<br />*/<br /></font><font color="#007700">require_once(</font><font color="#0000BB">dirname</font><font color="#007700">(</font><font color="#0000BB">__FILE__</font><font color="#007700">).</font><font color="#DD0000">'/class_session.php'</font><font color="#007700">);<br /><br /></font>
+    </code>
+  </code></div>
+  <br />
+  Next, you instantiate the session object. Do this in every page you want to
+  either save or restore the session in. (Or password-protect, but we'll talk
+  more about that later.) The code example below also shows how to echo the 
+  session's 'log' property which will tell you about what's wrong if things
+  don't work. NOTE: Create your session and save any session data BEFORE you
+  start any browser output, or this will not work.
+  <div class="php"><code>
+    <font color="#FF8000">/*
+    <br />Instantiate a new session object. If session exists, it will be restored,
+    <br />otherwise, a new session will be created--placing a sid cookie on the user's
+    <br />computer.
+    <br />*/
+    <br /></font><font color="#007700">if (!</font><font color="#0000BB">$s </font><font color="#007700">= new </font><font color="#0000BB">session</font><font color="#007700">()) {
+    <br />&nbsp;&nbsp;</font><font color="#FF8000">/*
+    <br />&nbsp;&nbsp;There is a problem with the session! The class has a 'log' property that
+    <br />&nbsp;&nbsp;contains a log of events. This log is useful for testing and debugging.
+    <br />&nbsp;&nbsp;*/
+    <br />&nbsp;&nbsp;</font><font color="#007700">echo </font><font color="#DD0000">"&lt;h2&gt;There is a problem with the session!&lt;/h2&gt;"</font><font color="#007700">;
+    
+    <br />&nbsp;&nbsp;echo </font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">log</font><font color="#007700">;
+    <br />&nbsp;&nbsp;exit();
+    <br />}
+    </font>
+  </code></div>
+  <br />
+  Now that you have a session, you can save data in it. Suppose the user
+  submitted a form to your script with their name and favorite color. Again, we
+  want to test if anything fails. If the save() method returns false, we'll 
+  look at the session's 'log' property.
+  <div class="php"><code>
+    <font color="#0000BB">
+    $s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'uname'</font><font color="#007700">] = </font><font color="#0000BB">$_POST</font><font color="#007700">[</font><font color="#DD0000">'uname'</font><font color="#007700">];
+    <br /></font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'favcolor'</font><font color="#007700">] = </font><font color="#0000BB">$_POST</font><font color="#007700">[</font><font color="#DD0000">'favcolor'</font><font color="#007700">];
+    
+    <br /></font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">date</font><font color="#007700">[</font><font color="#DD0000">'ip_address'</font><font color="#007700">] = </font><font color="#0000BB">$_SERVER</font><font color="#007700">[</font><font color="#DD0000">'REMOTE_ADDR'</font><font color="#007700">];
+    <br />if (!</font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">save</font><font color="#007700">()) {
+    <br />&nbsp;&nbsp;</font><font color="#FF8000">/*
+    <br />&nbsp;&nbsp;There is a problem with the session! The class has a 'log' property that
+    
+    <br />&nbsp;&nbsp;contains a log of events. This log is useful for testing and debugging.
+    <br />&nbsp;&nbsp;*/
+    <br />&nbsp;&nbsp;</font><font color="#007700">echo </font><font color="#DD0000">"&lt;h2&gt;There is a problem with the session!&lt;/h2&gt;"</font><font color="#007700">;
+    <br />&nbsp;&nbsp;echo </font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">log</font><font color="#007700">;
+    <br />&nbsp;&nbsp;exit();
+    <br />}
+    <br /></font>
+  </code></div>
+  <br />
+  If everything worked, there will be a SID (session ID) cookie on the user's
+  computer and a session cache file on your webserver's hard drive with the same
+  name as the SID.
+  <br /><br />
+  Now you have a way to maintain state specific to this user. You can access
+  this session data in all the rest of your scripts. With the class, you don't
+  do anything special to restore the session--simply create a new session
+  object, and if a session exists, it will be restored. Here is a complete
+  code example showing a script that restores a previously created session and
+  uses the session data.
+  <div class="php"><code>
+    <font color="#000000">
+    <font color="#0000BB">&lt;?php
+    <br />
+    <br /></font><font color="#FF8000">/*
+    <br />Include the class. Modify path according to where you put the class file.
+    <br />*/
+    <br /></font><font color="#007700">require_once(</font><font color="#0000BB">dirname</font><font color="#007700">(</font><font color="#0000BB">__FILE__</font><font color="#007700">).</font><font color="#DD0000">'/class_session.php'</font><font color="#007700">);
+    <br />
+    <br /></font><font color="#FF8000">/*
+    <br />Instantiate a new session object. If session exists, it will be restored,
+    <br />otherwise, a new session will be created--placing a sid cookie on the user's
+    
+    <br />computer.
+    <br />*/
+    <br /></font><font color="#007700">if (!</font><font color="#0000BB">$s </font><font color="#007700">= new </font><font color="#0000BB">session</font><font color="#007700">()) {
+    <br />&nbsp;&nbsp;</font><font color="#FF8000">/*
+    <br />&nbsp;&nbsp;There is a problem with the session! The class has a 'log' property that
+    <br />&nbsp;&nbsp;contains a log of events. This log is useful for testing and debugging.
+    <br />&nbsp;&nbsp;*/
+    <br />&nbsp;&nbsp;</font><font color="#007700">echo </font><font color="#DD0000">"&lt;h2&gt;There is a problem with the session!&lt;/h2&gt;"</font><font color="#007700">;
+    
+    <br />&nbsp;&nbsp;echo </font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">log</font><font color="#007700">;
+    <br />&nbsp;&nbsp;exit();
+    <br />}
+    <br />
+    <br /></font><font color="#0000BB">?&gt;
+    <br /></font>
+    <br />&lt;html&gt;
+    <br />&nbsp;&nbsp;&lt;body&gt;
+    <br />
+    <br />&nbsp;&nbsp;Hello, <font color="#0000BB">&lt;?= $s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'uname'</font><font color="#007700">] </font><font color="#0000BB">?&gt;</font>! Your favorite color is
+    
+    <br />&nbsp;&nbsp;<font color="#0000BB">&lt;?= $s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'favcolor'</font><font color="#007700">] </font><font color="#0000BB">?&gt;</font>.
+    <br />&nbsp;&nbsp;&lt;br /&gt;&lt;br /&gt;
+    <br />&nbsp;&nbsp;Your IP Address is <font color="#0000BB">&lt;?= $s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'ip_address'</font><font color="#007700">] </font><font color="#0000BB">?&gt;</font>.
+    
+    <br />
+    <br />&nbsp;&nbsp;&lt;/body&gt;
+    <br />&lt;/html&gt;
+    <br /></font>
+  </code></div>
+  <br />
+  The class also provides an expire() method to end the session. You can use
+  this with a "logout" feature.
+  <div class="php"><code>
+    <font color="#FF8000">/*
+    <br />Expire the session which clears the session data, deletes the 
+    <br />session cache file from your web server's hard drive, and expires the SID
+    <br />cookie on the user's computer.
+    <br />*/
+    <br /></font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">expire</font><font color="#007700">();
+    </font>  
+  </code></div>
+  <br />
+  <a href="logout.phps">View the source for the example logout.php</a>.
+  <br /><br />
+  Hopefully you now understand how easy it is to use class_session to maintain 
+  user data between pages.
+  <a href="example.phps">View the source for example.php</a> which puts this
+  all together for you, and is included in the download.
+  <br /><br />
+  <hr />
+  <h2>Using class_session to password-protect PHP pages.</h2>
+  Another powerful feature of session_class is the ability to password-protect
+  pages. The class uses a session variable 'logged_in' to keep track of whether
+  the user is logged in or not. So, let's walk through how to use this
+  functionality.
+  <br /><br />
+  Instantiate the object like before, but this time, pass 'true' to the
+  constructor. The class will then test the 'logged_in' session variable. If it
+  is false, it will "remember" where the user was going, then redirect to your
+  login page.
+  <div class="php"><code>
+    <font color="#FF8000">/*
+    <br />Instantiate a new session object. If session exists, it will be restored,
+    <br />otherwise, a new session will be created--placing a sid cookie on the user's
+    <br />computer. Passing in "true" tells class_session to require login before
+    <br />allowing access to this page. Read the comments in class_session.php and
+    <br />login.php about setting up your own authentication.
+    <br />*/
+    <br /></font><font color="#007700">if (!</font><font color="#0000BB">$s </font><font color="#007700">= new </font><font color="#0000BB">session</font><font color="#007700">(</font><font color="#0000BB">true</font><font color="#007700">)) {
+    <br />&nbsp;&nbsp;</font><font color="#FF8000">/*
+    <br />&nbsp;&nbsp;There is a problem with the session! The class has a 'log' property that
+    <br />&nbsp;&nbsp;contains a log of events. This log is useful for testing and debugging.
+    <br />&nbsp;&nbsp;*/
+    <br />&nbsp;&nbsp;</font><font color="#007700">echo </font><font color="#DD0000">"&lt;h2&gt;There is a problem with the session!&lt;/h2&gt;"</font><font color="#007700">;
+    <br />&nbsp;&nbsp;echo </font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">log</font><font color="#007700">;
+    <br />&nbsp;&nbsp;exit();
+    <br />}
+    </font>
+  </code></div>
+  <br />
+  So, if the user hit your page and was not logged in, they would be directed to
+  your login page. This can be any page you want--you define this in the class
+  by setting the 'login_page' property in the session() function. It defaults to
+  login.php. An example login.php is included in the download. You can modify
+  this login.php or create your own, but there are a few pieces in it that you
+  must keep to make it work with class_session. You can
+  <a href="login.phps">view the source of login.php</a>.
+  <br /><br />
+  Remember, you can use the expire() method to end the session--which
+  effectively logs the user out. Alternatively, if you wanted to continue to
+  maintain the session, but only log the user out from access to protected
+  content, you can just set the 'logged_in' session variable to false.
+  <div class="php"><code>
+    <font color="#FF8000">/*
+    <br />If you you want to maintain the session, but you want to remove the "logged in"
+    <br />status from the session, just do this.
+    <br />*/
+    <br /></font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">data</font><font color="#007700">[</font><font color="#DD0000">'logged_in'</font><font color="#007700">] = </font><font color="#0000BB">false</font><font color="#007700">;
+    <br /></font><font color="#0000BB">$s</font><font color="#007700">-&gt;</font><font color="#0000BB">save</font><font color="#007700">();
+    </font>
+  </code></div>
+  <br />
+  <hr />
+  <h3>About the author</h3>
+  <a href="mailto:troy@troywolf.com">Troy Wolf</a> operates
+  <a href="http://www.shinysolutions.com">ShinySolutions Webhosting</a>,
+  and is the author of
+  <a href="http://www.snippetedit.com">SnippetEdit</a>--a PHP application
+  providing browser-based website editing that even non-technical people can
+  use. Website editing as easy as it gets. Troy has been a professional
+  Internet and database application developer for over 10 years. He has many
+  years' experience with ASP, VBScript, PHP, Javascript, DHTML, CSS, SQL, and
+  XML on Windows and Linux platforms.
+ 
+  
+  </body>
+</html>
